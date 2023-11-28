@@ -156,13 +156,13 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 
 		if responseBody.Status == sidecar.ACTIVE {
 			for _, sc := range responseBody.ServiceComponents {
-				if strings.Contains(sc.Alias, "postgres") {
+				if strings.Contains(sc.Alias, "supabase") {
 					hostName = sc.NodesEndpoints[0].Endpoint
 					break
 				}
 			}
 			if hostName == "" {
-				log.Printf("Failed to get postgres endpoint")
+				log.Printf("Failed to get supabase endpoint")
 				return
 			}
 		} else {
@@ -179,9 +179,9 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 		}()
 	}
 
-	// Backend port is depends on actual postgres port, in this example, we are using 5432
+	// Backend port is depends on actual supabase port, in this example, we are using 5432
 	hostName = hostName + ":5432"
-	// Step 3: connect to backend postgres server
+	// Step 3: connect to backend supabase server
 	backendConnection, err := net.DialTCP("tcp", nil, getResolvedAddresses(hostName))
 	if err != nil {
 		log.Printf("Remote connection failed: %s", err)
@@ -209,7 +209,7 @@ func handleIncomingConnection(srcChannel, dstChannel *net.TCPConn) {
 		}
 
 		// Note that you can add any custom logic, like authentication, authorization
-		// before sending data to the backend postgres server.
+		// before sending data to the backend supabase server.
 		b, err := getModifiedBuffer(buff[:n])
 		if err != nil {
 			log.Printf("%s\n", err)

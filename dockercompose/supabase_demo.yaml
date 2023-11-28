@@ -1,9 +1,11 @@
 version: "3"
 services:
-  postgres:
-    image: njnjyyh/pg-proxy-demo:1
+  supabase:
+    image: njnjyyh/supabase-demo:latest
     ports:
       - 5432:5432
+      - 9187:9187
+      - 8000:8000
     x-omnistrate-compute:
       instanceTypes:
         - cloudProvider: aws
@@ -15,31 +17,33 @@ services:
         maxReplicas: 1
         minReplicas: 1
         idleMinutesBeforeScalingDown: 2
-        idleThreshold: 1
+        idleThreshold: 6
         overUtilizedMinutesBeforeScalingUp: 3
         overUtilizedThreshold: 80
         scalingMetric:
           metricEndpoint: "http://localhost:9187/metrics"
-          metricLabelName: "application_name"
-          metricLabelValue: "psql"
-          metricName: "pg_stat_activity_count"
+          metricLabelName: "server"
+          metricLabelValue: "localhost:5432"
+          metricName: "pg_stat_database_num_backends"
       enableEndpointPerReplica: true
       serverlessConfiguration:
-        imageURL: "docker.io/njnjyyh/pg-proxy-demo:latest"
+        imageURL: "docker.io/njnjyyh/supabase-proxy-demo:latest"
         portsMappingProxyConfig:
           maxNumberOfClustersPerProxyInstance: 9
           numberOfPortsPerCluster: 1
         proxyName: "proxy"
         enableAutoStop: true
-        minimumNodesInPool: 5
+        minimumNodesInPool: 2
     environment:
-      - POSTGRESQL_PASSWORD=$var.postgresqlPassword
-      - POSTGRESQL_DATABASE=postgres
-      - POSTGRESQL_USERNAME=postgres
-      - POSTGRESQL_POSTGRES_PASSWORD=$var.postgresqlPassword
-      - DATA_SOURCE_NAME=postgresql://postgres:{{ $var.postgresqlPassword }}@localhost:5432/postgres?sslmode=disable
-      - SECURITY_CONTEXT_USER_ID=1001
-      - SECURITY_CONTEXT_FS_GROUP=1001
+      - POSTGRES_PASSWORD=$var.postgresqlPassword
+      - DATA_VOLUME_MOUNTPOINT=/data
+      - JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
+      - ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
+      - SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q
+      - ADMIN_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic3VwYWJhc2VfYWRtaW4iLCJpc3MiOiJzdXBhYmFzZS1kZW1vIiwiaWF0IjoxNjQxNzY5MjAwLCJleHAiOjE3OTk1MzU2MDB9.Y9mSNVuTw2TdfryoaqM5wySvwQemGGWfSe9ixcklVfM
+      - MACHINE_TYPE=shared_cpu_1x_512m
+      - SECURITY_CONTEXT_USER_ID=0
+      - SECURITY_CONTEXT_FS_GROUP=0
       - SECURITY_CONTEXT_GROUP_ID=0
     x-omnistrate-api-params:
       - key: writerInstanceType
