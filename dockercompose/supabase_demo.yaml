@@ -17,14 +17,14 @@ services:
         maxReplicas: 1
         minReplicas: 1
         idleMinutesBeforeScalingDown: 2
-        idleThreshold: 6
+        idleThreshold: 1
         overUtilizedMinutesBeforeScalingUp: 3
         overUtilizedThreshold: 80
         scalingMetric:
           metricEndpoint: "http://localhost:9187/metrics"
-          metricLabelName: "server"
-          metricLabelValue: "localhost:5432"
-          metricName: "pg_stat_database_num_backends"
+          metricLabelName: "application_name"
+          metricLabelValue: "psql"
+          metricName: "pg_stat_activity_count"
       enableEndpointPerReplica: true
       serverlessConfiguration:
         imageURL: "docker.io/njnjyyh/supabase-proxy-demo:latest"
