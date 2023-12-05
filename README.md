@@ -21,8 +21,8 @@ You can import the docker image using the UI using the **Import docker compose**
 
 
 The docker compose example uses two images: 
-- njnjyyh/supabase-demo:latest <- supabase all in one image https://github.com/supabase/postgres/tree/develop/docker/all-in-one
-- docker.io/njnjyyh/pg-proxy-demo:latest <- proxy image built from this repo
+- njnjyyh/supabase-demo:custom-scaling-metrics <- supabase all in one image https://github.com/supabase/postgres/tree/develop/docker/all-in-one with custom metrics
+- docker.io/njnjyyh/pg-proxy-demo:1.0 <- proxy image built from this repo
 
 Setup Service Name to **Supabase Serverless**. Using this name is important as the following commands will reference the service with this name. 
 

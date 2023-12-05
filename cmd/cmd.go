@@ -58,7 +58,7 @@ func main() {
 			for {
 				frontEndConnection, innerError := l.AcceptTCP()
 				if innerError != nil {
-					log.Printf("Failed to accept sidecarClient connection: %v", innerError)
+					log.Printf("Failed to accept front end connection: %v", innerError)
 					os.Exit(1)
 				}
 
@@ -85,6 +85,31 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 		if _, err := frontEndConnection.Write([]byte("Health Check Succeed\n")); err != nil {
 			log.Printf("Failed to write to client: %v", err)
 		}
+		return
+	}
+
+	inputBuffer := make([]byte, 0xffff)
+	size, err := frontEndConnection.Read(inputBuffer)
+	if err != nil {
+		log.Printf("Failed to read from client: %v", err)
+		return
+	}
+
+	inputBuffer, err = getModifiedBuffer(inputBuffer[:size])
+	if err != nil {
+		log.Printf("%s\n", err)
+		return
+	}
+
+	// Check if the input is a psql connection
+	// First 8 bytes will be
+	// 00 00 00 08 04 d2 16 2f
+	if inputBuffer[3] != 0x08 &&
+		inputBuffer[4] != 0x04 &&
+		inputBuffer[5] != 0xd2 &&
+		inputBuffer[6] != 0x16 &&
+		inputBuffer[7] != 0x2f {
+		log.Printf("Not a psql connection")
 		return
 	}
 
@@ -183,13 +208,14 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 	hostName = hostName + ":5432"
 	// Step 3: connect to backend supabase server
 	backendConnection, err := net.DialTCP("tcp", nil, getResolvedAddresses(hostName))
+
 	if err != nil {
 		log.Printf("Remote connection failed: %s", err)
 		return
 	}
 
 	// Step 4: Forward data from frontend to backend and forward response data from backend to frontend.
-	go handleIncomingConnection(frontEndConnection, backendConnection)
+	go handleIncomingConnection(frontEndConnection, backendConnection, inputBuffer)
 	go handleResponseConnection(backendConnection, frontEndConnection)
 
 	// TODO: Close frontend/backend connections
@@ -198,29 +224,36 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 /**
  * This function is used to forward data from frontend to backend. srcChannel is frontend connection, dstChannel is backend connection.
  */
-func handleIncomingConnection(srcChannel, dstChannel *net.TCPConn) {
+func handleIncomingConnection(srcChannel, dstChannel *net.TCPConn, firstPacket []byte) {
 	buff := make([]byte, 0xffff)
+	firstTime := true
 
 	for {
-		n, err := srcChannel.Read(buff)
-		if err != nil {
-			log.Printf("Read failed '%s'\n", err)
-			return
-		}
-
-		// Note that you can add any custom logic, like authentication, authorization
-		// before sending data to the backend supabase server.
-		b, err := getModifiedBuffer(buff[:n])
-		if err != nil {
-			log.Printf("%s\n", err)
-			err = dstChannel.Close()
+		var b []byte
+		if !firstTime {
+			n, err := srcChannel.Read(buff)
 			if err != nil {
-				log.Printf("connection closed failed '%s'\n", err)
+				log.Printf("Read failed '%s'\n", err)
+				return
 			}
-			return
+
+			// Note that you can add any custom logic, like authentication, authorization
+			// before sending data to the backend supabase server.
+			b, err = getModifiedBuffer(buff[:n])
+			if err != nil {
+				log.Printf("%s\n", err)
+				err = dstChannel.Close()
+				if err != nil {
+					log.Printf("connection closed failed '%s'\n", err)
+				}
+				return
+			}
+		} else {
+			b = firstPacket
+			firstTime = false
 		}
 
-		n, err = dstChannel.Write(b)
+		_, err := dstChannel.Write(b)
 		if err != nil {
 			log.Printf("Write failed '%s'\n", err)
 			return

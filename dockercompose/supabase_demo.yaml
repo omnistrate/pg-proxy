@@ -27,7 +27,7 @@ services:
           metricName: "pg_activities_active_connections_count"
       enableEndpointPerReplica: true
       serverlessConfiguration:
-        imageURL: "docker.io/njnjyyh/supabase-proxy-demo:latest"
+        imageURL: "docker.io/njnjyyh/supabase-proxy-demo:1.0"
         portsMappingProxyConfig:
           maxNumberOfClustersPerProxyInstance: 9
           numberOfPortsPerCluster: 1
