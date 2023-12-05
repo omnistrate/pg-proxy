@@ -17,7 +17,7 @@ services:
         maxReplicas: 1
         minReplicas: 1
         idleMinutesBeforeScalingDown: 2
-        idleThreshold: 2
+        idleThreshold: 1
         overUtilizedMinutesBeforeScalingUp: 3
         overUtilizedThreshold: 80
         scalingMetric:
