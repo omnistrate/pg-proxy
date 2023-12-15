@@ -1,4 +1,7 @@
 version: "3"
+x-omnistrate-my-account:
+  AwsAccountId: '<accountId>'
+  AwsBootstrapRoleAccountArn: 'arn:aws:iam::<accountId>:role/omnistrate-bootstrap-role'
 services:
   supabase:
     image: njnjyyh/supabase-demo:custom-scaling-metrics
