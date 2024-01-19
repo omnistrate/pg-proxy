@@ -13,7 +13,7 @@ all: tidy build
 
 .PHONY: docker-build
 docker-build:
-	docker buildx build --platform=linux/arm64 -f cmd/build/Dockerfile -t omnistrate/pg-proxy:latest .
+	docker buildx build --platform=linux/amd64,linux/arm64 -f cmd/build/Dockerfile -t njnjyyh/omnistrate-generic-proxy:latest . --push
 
 .PHONY: tidy
 tidy:

@@ -17,24 +17,16 @@ services:
       autoscaling:
         maxReplicas: 1
         minReplicas: 1
-        idleMinutesBeforeScalingDown: 2
-        idleThreshold: 1
-        overUtilizedMinutesBeforeScalingUp: 3
-        overUtilizedThreshold: 80
-        scalingMetric:
-          metricEndpoint: "http://localhost:9187/metrics"
-          metricLabelName: "application_name"
-          metricLabelValue: "psql"
-          metricName: "pg_stat_activity_count"
       enableEndpointPerReplica: true
       serverlessConfiguration:
-        imageURL: "docker.io/njnjyyh/pg-proxy-demo:2.0"
+        imageURL: "docker.io/njnjyyh/omnistrate-generic-proxy:0.4"
         portsMappingProxyConfig:
           maxNumberOfClustersPerProxyInstance: 9
           numberOfPortsPerCluster: 1
         proxyName: "proxy"
         enableAutoStop: true
         minimumNodesInPool: 5
+        targetPort: 5432
     environment:
       - POSTGRESQL_PASSWORD=$var.postgresqlPassword
       - POSTGRESQL_DATABASE=postgres
