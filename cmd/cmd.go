@@ -114,12 +114,6 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 		return
 	}
 
-	inputBuffer, err = getModifiedBuffer(inputBuffer[:size])
-	if err != nil {
-		log.Printf("%s\n", err)
-		return
-	}
-
 	var serverlessTargetPort string
 	var hostName string
 	var backendConnection *net.TCPConn
