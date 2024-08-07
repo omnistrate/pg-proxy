@@ -1,5 +1,5 @@
 DOCKER_PLATFORM=linux/amd64,linux/arm64
-PROXY_VERSION=0.2
+PROXY_VERSION=0.10
 TESTCOVERAGE_THRESHOLD=0
 REPO_ROOT=$(shell git rev-parse --show-toplevel)
 
@@ -11,7 +11,7 @@ all: tidy build
 
 .PHONY: docker-build
 docker-build:
-	docker buildx build --platform=${DOCKER_PLATFORM} -f cmd/build/Dockerfile -t omnistrate/generic-proxy:${PROXY_VERSION} . --push
+	docker buildx build --platform=${DOCKER_PLATFORM} -f cmd/build/Dockerfile -t omnistrate/mysql-proxy:${PROXY_VERSION} . --push
 
 .PHONY: tidy
 tidy:
