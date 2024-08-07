@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/omnistrate/pg-proxy/pkg/sidecar"
-	"github.com/pkg/errors"
 	"io"
 	"log"
 	"net"
@@ -89,24 +88,31 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 		return
 	}
 
-	frontEndConnection.SetReadDeadline(time.Now().Add(2 * time.Second))
-
 	inputBuffer := make([]byte, 0xffff)
 	size, err := frontEndConnection.Read(inputBuffer)
+	if err != nil {
+		log.Printf("Failed to read from client: %v", err)
+		return
+	}
 
-	if err == nil {
-		log.Printf("Not mysql connections, returning")
+	inputBuffer, err = getModifiedBuffer(inputBuffer[:size])
+	if err != nil {
+		log.Printf("%s\n", err)
+		return
+	}
+
+	// Check if the input is a psql connection
+	// First 8 bytes will be
+	// 00 00 00 08 04 d2 16 2f
+	if inputBuffer[3] != 0x08 &&
+		inputBuffer[4] != 0x04 &&
+		inputBuffer[5] != 0xd2 &&
+		inputBuffer[6] != 0x16 &&
+		inputBuffer[7] != 0x2f {
+		log.Printf("Not a psql connection")
 		_ = frontEndConnection.Close()
 		return
 	}
-	if err != nil {
-		if !errors.Is(err, os.ErrDeadlineExceeded) {
-			log.Printf("Failed to read from client: %v", err)
-			return
-		}
-	}
-
-	frontEndConnection.SetReadDeadline(time.Time{})
 
 	inputBuffer, err = getModifiedBuffer(inputBuffer[:size])
 	if err != nil {
