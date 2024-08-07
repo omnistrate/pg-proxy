@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/omnistrate/pg-proxy/pkg/sidecar"
+	"github.com/pkg/errors"
 	"io"
 	"log"
 	"net"
@@ -85,6 +86,31 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 		if _, err := frontEndConnection.Write([]byte("Health Check Succeed\n")); err != nil {
 			log.Printf("Failed to write to client: %v", err)
 		}
+		return
+	}
+
+	frontEndConnection.SetReadDeadline(time.Now().Add(2 * time.Second))
+
+	inputBuffer := make([]byte, 0xffff)
+	size, err := frontEndConnection.Read(inputBuffer)
+
+	if err == nil {
+		log.Printf("Not mysql connections, returning")
+		_ = frontEndConnection.Close()
+		return
+	}
+	if err != nil {
+		if !errors.Is(err, os.ErrDeadlineExceeded) {
+			log.Printf("Failed to read from client: %v", err)
+			return
+		}
+	}
+
+	frontEndConnection.SetReadDeadline(time.Time{})
+
+	inputBuffer, err = getModifiedBuffer(inputBuffer[:size])
+	if err != nil {
+		log.Printf("%s\n", err)
 		return
 	}
 
