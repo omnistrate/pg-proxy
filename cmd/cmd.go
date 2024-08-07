@@ -226,43 +226,43 @@ func handleClient(frontEndConnection *net.TCPConn, sidecarClient *sidecar.Client
 	}
 
 	// Step 4: Forward data from frontend to backend and forward response data from backend to frontend.
-	go handleIncomingConnection(frontEndConnection, backendConnection)
+	go handleIncomingConnection(frontEndConnection, backendConnection, inputBuffer)
 	go handleResponseConnection(backendConnection, frontEndConnection)
 }
 
 /**
  * This function is used to forward data from frontend to backend. srcChannel is frontend connection, dstChannel is backend connection.
  */
-func handleIncomingConnection(srcChannel, dstChannel *net.TCPConn) {
+func handleIncomingConnection(srcChannel, dstChannel *net.TCPConn, firstPacket []byte) {
 	buff := make([]byte, 0xffff)
+	firstTime := true
 
 	for {
 		var b []byte
-		n, err := srcChannel.Read(buff)
-		if err != nil {
-			if err == io.EOF {
+		if !firstTime {
+			n, err := srcChannel.Read(buff)
+			if err != nil {
+				log.Printf("Read failed '%s'\n", err)
+				return
+			}
+
+			// Note that you can add any custom logic, like authentication, authorization
+			// before sending data to the backend postgres server.
+			b, err = getModifiedBuffer(buff[:n])
+			if err != nil {
+				log.Printf("%s\n", err)
 				err = dstChannel.Close()
 				if err != nil {
-					log.Printf("backend connection closed failed '%s'\n", err)
+					log.Printf("connection closed failed '%s'\n", err)
 				}
+				return
 			}
-			log.Printf("Read failed '%s'\n", err)
-			return
+		} else {
+			b = firstPacket
+			firstTime = false
 		}
 
-		// Note that you can add any custom logic, like authentication, authorization
-		// before sending data to the backend serverless resource server.
-		b, err = getModifiedBuffer(buff[:n])
-		if err != nil {
-			log.Printf("%s\n", err)
-			err = dstChannel.Close()
-			if err != nil {
-				log.Printf("connection closed failed '%s'\n", err)
-			}
-			return
-		}
-
-		_, err = dstChannel.Write(b)
+		_, err := dstChannel.Write(b)
 		if err != nil {
 			log.Printf("Write failed '%s'\n", err)
 			return
